@@ -7,5 +7,5 @@ class Customer(Base):
     __tablename__ = "customers"
 
     id:Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[int] = mapped_column(String(150), nullable=False)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)

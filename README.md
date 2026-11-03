@@ -2,23 +2,23 @@
 
 > QoSE & BGP Path Intelligence Platform for Destination Experience Analysis
 
-**Route Intelligence** is an open-source network intelligence platform designed to investigate how network routing and path changes affect real-world application and destination performance.
+Route Intelligence is an open-source network intelligence platform designed to investigate how network routing and path changes affect real-world application and destination performance.
 
-The project combines **network measurements, traceroute/path intelligence, ASN information, BGP routing data, historical analysis, and QoSE metrics** to help answer:
+The project combines network measurements, network path intelligence, ASN information, BGP routing data, historical analysis, and QoSE metrics to help answer:
 
-> **When a customer experiences poor application performance, what is happening, where does the degradation begin, what network path is involved, what changed, and which path has historically performed better?**
+> When a customer experiences poor application performance, what is happening, where does the degradation begin, what network path is involved, what changed, and which path has historically performed better?
 
 ---
 
 ## 🚧 Project Status
 
-**Status:** Active Development
+**Status: Active Development**
 
-Route Intelligence is currently being developed incrementally following a 14-day engineering roadmap.
+Route Intelligence is being developed incrementally following an engineering roadmap.
 
-Current progress:
+### Current Progress
 
-- [x] Project repository initialized
+- [x] Project repository
 - [x] Python virtual environment
 - [x] PostgreSQL database
 - [x] SQLAlchemy foundation
@@ -26,20 +26,44 @@ Current progress:
 - [x] Customer model
 - [x] Probe model
 - [x] Destination model
+- [x] Measurement model
 - [x] FastAPI skeleton
 - [x] Health endpoint
-- [x] Initial Git repository
-- [ ] Measurement Engine
+- [x] MikroTik Telnet communication
+- [x] Telnet negotiation handling
+- [x] MikroTik RouterOS authentication
+- [x] MikroTik command execution
+- [x] MikroTik ICMP ping execution
+- [x] Raw ping measurement output
+
+### In Progress
+
+- [ ] Ping output parser
+- [ ] Measurement persistence
+- [ ] Measurement scheduler
+- [ ] Traceroute engine
+- [ ] MTR engine
+- [ ] TCP/TLS measurements
+- [ ] DNS measurements
+- [ ] HTTPS measurements
+
+### Planned
+
 - [ ] Path Intelligence
-- [ ] BGP Intelligence
-- [ ] Historical Route Analysis
-- [ ] QoSE Correlation Engine
-- [ ] Multi-Probe Analysis
-- [ ] Application Performance Analysis
-- [ ] Routing Recommendation Engine
+- [ ] Hop-to-ASN mapping
+- [ ] Path normalization
+- [ ] RIPE RIS integration
+- [ ] RIPEstat integration
+- [ ] BGP path analysis
+- [ ] Historical route analysis
+- [ ] QoSE correlation
+- [ ] Multi-probe analysis
+- [ ] Application performance analysis
+- [ ] Routing recommendation engine
+- [ ] REST API
 - [ ] Dashboard
 - [ ] Alerting
-- [ ] Production Deployment
+- [ ] Production deployment
 
 ---
 
@@ -72,7 +96,7 @@ Customer / Probe
        └── ASN Path
        │
        ▼
-   BGP Intelligence
+  BGP Intelligence
        │
        ├── Prefix
        ├── Origin ASN
@@ -91,22 +115,24 @@ Customer / Probe
  Root Cause Analysis
        │
        ▼
- Routing Recommendation
+Routing Recommendation
 ```
 
-The final system should provide **evidence-based routing recommendations**, not automatically modify production BGP configuration.
+The final system should provide evidence-based routing recommendations.
+
+Route Intelligence **will not automatically modify production BGP configuration**.
 
 ---
 
 # 🧠 Core Concept
 
-The project models three primary entities:
+Route Intelligence models three primary entities.
 
-### Customer
+## Customer
 
-The organization or service recipient experiencing network/application performance.
+The organization or service recipient experiencing network or application performance issues.
 
-### Probe
+## Probe
 
 A measurement point used to perform network tests.
 
@@ -119,9 +145,9 @@ A Probe may be:
 - Cloud instance
 - Other supported measurement systems
 
-A Probe is a **measurement point**, not the measurement software itself.
+A Probe is the **measurement point**, not the measurement software itself.
 
-### Destination
+## Destination
 
 A logical application, service, or network destination that customers care about.
 
@@ -141,7 +167,12 @@ Examples:
 
 A Destination should not be treated as a single static IP address.
 
-A logical Destination may have multiple endpoints and IP addresses depending on location, DNS resolution, CDN behavior, or service architecture.
+A logical Destination may have multiple endpoints and IP addresses depending on:
+
+- Location
+- DNS resolution
+- CDN behavior
+- Service architecture
 
 ---
 
@@ -175,17 +206,72 @@ The initial architecture is intentionally simple.
                     │    Destination      │
                     └──────────┬──────────┘
                                │
-                ┌──────────────┼──────────────┐
-                ▼              ▼              ▼
-          Network Path     Application       BGP
-          Intelligence     Performance    Intelligence
+                  ┌────────────┼────────────┐
+                  ▼            ▼            ▼
+            Network Path   Application      BGP
+            Intelligence   Performance   Intelligence
 ```
 
-The relationship between Probe and Destination is represented through **Measurements**, rather than storing a direct `destination_id` inside the Probe.
+The relationship between Probe and Destination is represented through Measurements.
 
 ---
 
-# 📊 Measurement Types
+# 📊 Measurement Engine
+
+The measurement engine is designed to collect network and application evidence from supported probes.
+
+Current implementation:
+
+```text
+Route Intelligence
+       │
+       │ Telnet
+       ▼
+    MikroTik
+       │
+       │ RouterOS command
+       ▼
+ /ping destination
+       │
+       ▼
+ Raw measurement output
+```
+
+### Current MikroTik capability
+
+The MikroTik Telnet engine currently supports:
+
+- Telnet socket connection
+- Basic Telnet negotiation
+- RouterOS terminal handling
+- Username/password authentication
+- RouterOS prompt detection
+- Command execution
+- Raw command output collection
+- ICMP ping execution
+
+Example:
+
+```text
+/ping 8.8.8.8 count=5
+```
+
+Example collected result:
+
+```text
+sent=5
+received=5
+packet-loss=0%
+min-rtt=3ms425us
+avg-rtt=3ms838us
+max-rtt=4ms228us
+```
+
+The raw output is intentionally preserved because measurement evidence is important for troubleshooting and auditability.
+
+---
+
+# 🧪 Measurement Types
 
 Route Intelligence will support multiple layers of measurement.
 
@@ -228,7 +314,7 @@ Application performance should not automatically be inferred from ICMP results.
 
 ## Throughput
 
-Throughput measurements can be used to investigate bandwidth-related performance problems.
+Throughput measurements may be used to investigate bandwidth-related performance problems.
 
 Speed-test results should not be treated as definitive proof of destination application performance.
 
@@ -247,7 +333,7 @@ Probe
 Customer Edge
   │
   ▼
-VELO
+ISP
   │
   ▼
 Transit / Peering
@@ -276,7 +362,7 @@ Normalized:
 AS24207 → AS2914 → AS3356 → Destination ASN
 ```
 
-The raw evidence remains important for troubleshooting and auditability.
+Raw evidence remains important for troubleshooting and auditability.
 
 ---
 
@@ -284,7 +370,7 @@ The raw evidence remains important for troubleshooting and auditability.
 
 Route Intelligence is designed to correlate observed network paths with routing information.
 
-Potential BGP data sources include:
+Planned BGP data sources include:
 
 - RIPE RIS
 - RIPEstat
@@ -292,7 +378,7 @@ Potential BGP data sources include:
 - Looking Glass services
 - Other public routing data sources
 
-The system may collect information such as:
+The system may collect:
 
 ```text
 Prefix
@@ -326,13 +412,10 @@ Recommendation History
 
 This allows the system to answer questions such as:
 
-> Was this path previously used?
-
-> What was the latency when the previous path was active?
-
-> Did the BGP path change before the QoSE degradation?
-
-> Has another path historically performed better?
+- Was this path previously used?
+- What was the latency when the previous path was active?
+- Did the BGP path change before the QoSE degradation?
+- Has another path historically performed better?
 
 ---
 
@@ -342,15 +425,15 @@ The platform should correlate:
 
 ```text
 BGP Change
-      +
+     +
 Path Change
-      +
+     +
 QoSE Change
 ```
 
 However:
 
-> **A BGP path change alone must never be treated as proof of root cause.**
+> A BGP path change alone must never be treated as proof of root cause.
 
 Correlation should consider:
 
@@ -373,12 +456,12 @@ The objective is to produce an evidence-based confidence level rather than a pre
 
 Multiple probes can provide stronger evidence.
 
-For example:
+Example:
 
 ```text
 Jakarta Probe ─────┐
                    │
-Bandung Probe ─────┼──► Same ASN Path ──► Same Destination
+Bandung Probe ─────┼──► Same ASN Path ──► Destination
                    │
 Surabaya Probe ────┘
 ```
@@ -443,9 +526,9 @@ Recommendation:
 Investigate alternative routing path.
 ```
 
-Recommendations are **advisory only**.
+Recommendations are advisory only.
 
-Route Intelligence will **not automatically modify production BGP configuration**.
+Route Intelligence will not automatically modify production BGP configuration.
 
 ---
 
@@ -466,14 +549,17 @@ Route Intelligence will **not automatically modify production BGP configuration*
 
 ## Day 2 — Measurement Engine
 
-- Ping
-- MTR
-- Traceroute
-- TCP
-- DNS
-- HTTPS
-- Measurement storage
-- Raw measurement output
+- [x] MikroTik Telnet communication
+- [x] RouterOS authentication
+- [x] ICMP Ping execution
+- [x] Raw measurement output
+- [ ] Ping parser
+- [ ] Measurement storage
+- [ ] MTR
+- [ ] Traceroute
+- [ ] TCP
+- [ ] DNS
+- [ ] HTTPS
 
 ## Day 3 — Path Intelligence
 
@@ -571,8 +657,6 @@ Route Intelligence will **not automatically modify production BGP configuration*
 
 # 🛠️ Technology Stack
 
-Current stack:
-
 | Component | Technology |
 |---|---|
 | Language | Python |
@@ -604,10 +688,16 @@ route-intelligence/
 │   └── script.py.mako
 │
 ├── app/
+│   ├── engine/
+│   │   ├── __init__.py
+│   │   ├── mikrotik_telnet.py
+│   │   └── ping.py
+│   │
 │   ├── models/
 │   │   ├── __init__.py
 │   │   ├── customer.py
 │   │   ├── destination.py
+│   │   ├── measurement.py
 │   │   └── probe.py
 │   │
 │   ├── __init__.py
@@ -616,6 +706,8 @@ route-intelligence/
 │   └── main.py
 │
 ├── tests/
+│   ├── __init__.py
+│   └── test_telnet.py
 │
 ├── .gitignore
 ├── alembic.ini
@@ -657,8 +749,6 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> `requirements.txt` will be maintained as the dependency set is finalized.
-
 ## Configuration
 
 Create a `.env` file:
@@ -667,7 +757,7 @@ Create a `.env` file:
 DATABASE_URL=postgresql+psycopg://route_app:YOUR_PASSWORD@localhost:5432/route_intelligence
 ```
 
-**Never commit `.env` to Git.**
+Never commit `.env` to Git.
 
 ## Run migrations
 
@@ -697,6 +787,53 @@ Expected:
 
 ---
 
+# 🧪 Testing the MikroTik Measurement Engine
+
+The current development environment can test a MikroTik RouterOS probe through Telnet.
+
+Example:
+
+```bash
+python -m tests.test_telnet
+```
+
+Expected flow:
+
+```text
+Route Intelligence
+       │
+       │ Telnet
+       ▼
+MikroTik RouterOS
+       │
+       │ /ping
+       ▼
+Destination
+```
+
+The test validates:
+
+1. TCP connection
+2. Telnet negotiation
+3. RouterOS login
+4. RouterOS command execution
+5. Raw ping output collection
+
+Example output:
+
+```text
+sent=5
+received=5
+packet-loss=0%
+min-rtt=3ms425us
+avg-rtt=3ms838us
+max-rtt=4ms228us
+```
+
+The next step is converting this raw output into normalized measurement data and storing it in PostgreSQL.
+
+---
+
 # 🔐 Security Principles
 
 Route Intelligence follows several basic security principles:
@@ -711,9 +848,7 @@ Route Intelligence follows several basic security principles:
 
 ---
 
-# 🧪 Engineering Principles
-
-The project follows these principles:
+# 🧠 Engineering Principles
 
 ### Evidence before conclusion
 
@@ -753,7 +888,7 @@ Recommendations may be automated, but production routing changes require human c
 
 Contributions, ideas, experiments, and network-engineering discussions are welcome.
 
-Before implementing major features, please consider:
+Before implementing major features, consider:
 
 1. What problem does this solve?
 2. What network evidence does it use?
@@ -762,11 +897,29 @@ Before implementing major features, please consider:
 5. Can the result be validated?
 6. Does the implementation preserve raw evidence?
 
+For team development, use feature branches and Pull Requests rather than modifying the shared `main` branch directly.
+
+Example:
+
+```bash
+git checkout -b feature/ping-parser
+```
+
+After development:
+
+```bash
+git add .
+git commit -m "feat: add ping parser"
+git push -u origin feature/ping-parser
+```
+
+Then open a Pull Request for review.
+
 ---
 
 # 📜 License
 
-License: **TBD**
+License: TBD
 
 The project is currently under active development and the final license has not yet been selected.
 
@@ -780,7 +933,7 @@ Route Intelligence is developed collaboratively by network engineering and softw
 
 | Contributor | GitHub | Focus |
 |---|---|---|
-| **Adi Saputra** | [adisaputra-prog](https://github.com/adisaputra-prog) | Network Engineering, QoSE, Routing & BGP |
+| Adi Saputra | [@adisaputra_prog](https://github.com/adisaputra_prog) | Network Engineering, QoSE, Routing & BGP |
 
 ## Contribution Areas
 
@@ -797,7 +950,8 @@ Contributors may participate in areas including:
 - 🧪 Testing & Validation
 - 📚 Documentation
 
-> Contributors can be added as the project grows.
+Contributors can be added as the project grows.
+
 ---
 
-> **Route Intelligence is built to turn network measurements and routing data into actionable network intelligence.**
+> Route Intelligence is built to turn network measurements and routing data into actionable network intelligence.
