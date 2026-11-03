@@ -1,45 +1,81 @@
-import asyncio
-import os
-import telnetlib3
+from app.engine.mikrotik_telnet import MikroTikTelnet
+import re
 
 
-HOST = "192.168.1.101"
-PORT = 23
-USERNAME = "adi.admin"
+def parse_routeros_ping(raw_output: str) -> dict:
+    result = {
+        "packet_sent": None,
+        "packet_received": None,
+        "packet_loss": None,
+        "latency_min": None,
+        "latency_avg": None,
+        "latency_max": None,
+    }
 
-
-async def main():
-    password = os.environ["MIKROTIK_PASSWORD"]
-
-    reader, writer = await telnetlib3.open_connection(
-        host=HOST,
-        port=PORT,
+    packet_match = re.search(
+        r"sent=(\d+)\s+"
+        r"received=(\d+)\s+"
+        r"packet-loss=([\d.]+)%",
+        raw_output,
+        re.IGNORECASE,
     )
 
-    # Tunggu prompt login
-    await reader.readuntil(b"Login:")
+    if packet_match:
+        result["packet_sent"] = int(packet_match.group(1))
+        result["packet_received"] = int(packet_match.group(2))
+        result["packet_loss"] = float(packet_match.group(3))
 
-    writer.write(USERNAME + "\n")
+    rtt_match = re.search(
+        r"min-rtt=(\d+)ms(\d+)us\s+"
+        r"avg-rtt=(\d+)ms(\d+)us\s+"
+        r"max-rtt=(\d+)ms(\d+)us",
+        raw_output,
+        re.IGNORECASE,
+    )
 
-    # Tunggu prompt password
-    await reader.readuntil(b"Password:")
+    if rtt_match:
+        result["latency_min"] = (
+            int(rtt_match.group(1))
+            + int(rtt_match.group(2)) / 1000
+        )
 
-    writer.write(password + "\n")
+        result["latency_avg"] = (
+            int(rtt_match.group(3))
+            + int(rtt_match.group(4)) / 1000
+        )
 
-    # Tunggu sampai masuk ke RouterOS
-    await reader.readuntil(b">")
+        result["latency_max"] = (
+            int(rtt_match.group(5))
+            + int(rtt_match.group(6)) / 1000
+        )
 
-    # Jalankan ping
-    writer.write("/ping 8.8.8.8 count=5\n")
-
-    # Baca output sampai prompt RouterOS muncul kembali
-    output = await reader.readuntil(">")
-
-    print("=== RAW OUTPUT ===")
-    print(output)
-
-    writer.close()
+    return result
 
 
-if __name__ == "__main__":
-    asyncio.run(main())
+class PingEngine:
+
+    def __init__(self, router: MikroTikTelnet):
+        self.router = router
+
+    def measure(
+        self,
+        destination: str,
+        count: int = 5,
+    ) -> dict:
+
+        command = (
+            f"/ping {destination} count={count}"
+        )
+
+        raw_output = self.router.send_command(
+            command
+        )
+
+        result = parse_routeros_ping(
+            raw_output
+        )
+
+        result["destination"] = destination
+        result["raw_output"] = raw_output
+
+        return result
